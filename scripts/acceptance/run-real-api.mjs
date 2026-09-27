@@ -1,6 +1,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync, symlinkSync, copyFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { loadHarnessYaml } from '../harness-dependencies.mjs';
 import { parseEnv } from 'node:util';
 import { join, resolve, dirname, relative, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
@@ -16,10 +17,13 @@ while (!existsSync(evidenceParent)) evidenceParent = dirname(evidenceParent);
 const fromTmp = relative(realpathSync('/tmp'), realpathSync(evidenceParent));
 if (fromTmp === '..' || fromTmp.startsWith('../') || isAbsolute(fromTmp)) throw Error('Acceptance evidence must stay inside the existing /tmp directory');
 if (existsSync(run)) throw Error('Use a new evidence directory; existing results are not overwritten');
-const require = createRequire(join(runtime, 'package.json')), yaml = require('yaml');
-const version = require('@deepseek-ai/dsh/package.json').version;
-const settings = yaml.parse(readFileSync(join(userDshHome, 'settings.yaml'), 'utf8'));
-let credentials = yaml.parse(readFileSync(join(userDshHome, '.credentials.yaml'), 'utf8'));
+const yaml = loadHarnessYaml(runtime);
+const runtimeRequire = createRequire(join(runtime, 'package.json'));
+const version = runtimeRequire('@deepseek-ai/dsh/package.json').version;
+const settingsPath = join(userDshHome, 'settings.yaml');
+const settings = existsSync(settingsPath) ? yaml.parse(readFileSync(settingsPath, 'utf8')) : { 'agent-default-model': { provider: 'deepseek-official', model: 'deepseek-flash' } };
+const credentialPath = join(userDshHome, '.credentials.yaml');
+let credentials = existsSync(credentialPath) ? yaml.parse(readFileSync(credentialPath, 'utf8')) : {};
 const route = settings['agent-default-model'], provider = settings['llm-deepseek'] ?? {};
 // The model id is a pass-through wire value (Harness 0.1.5-rc.1 renamed the
 // default to `deepseek-flash`), so pin the real provider and require a
@@ -39,13 +43,16 @@ symlinkSync(join(runtime, 'node_modules'), join(extracted, 'package/node_modules
 symlinkSync(join(extracted, 'package'), join(profile, 'node_modules/@nanmicoder/dsh-auto-mode'), 'dir');
 const json = (path, value) => writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
 json(join(profile, 'package.json'), { name: 'auto-mode-acceptance-profile', version: '0.0.0', private: true, type: 'module', dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', mode === 'web' ? '@deepseek-ai/dsh-web-app' : '@deepseek-ai/dsh-headless', '@nanmicoder/dsh-auto-mode'], patchReload: 'startup' } } });
-const patches = [{ id: 'permission', config: { ...yaml.parse(readFileSync(join(extracted, 'package/cordis.patch.yml'), 'utf8')).find(p => p.id === 'permission').config, defaultPreset: 'auto' } }, { id: 'llm-pi-ai', disabled: true }, { id: 'llm-deepseek', config: providerConfig }, { id: 'agent-default-model', config: route }];
+const patches = [{ id: 'permission', config: { ...yaml.parse(readFileSync(join(extracted, 'package/cordis.patch.yml'), 'utf8')).find(p => p.id === 'permission').config, defaultPreset: 'sandbox-auto' } }, { id: 'llm-pi-ai', disabled: true }, { id: 'llm-deepseek', config: providerConfig }, { id: 'agent-default-model', config: route }];
 if (shell === 'pwsh') patches.push({id:'bash-sandbox',disabled:true},{id:'tool-bash',disabled:true},{id:'pwsh-sandbox',disabled:false},{id:'tool-pwsh',disabled:false});
 // Harness 0.1.5-rc.1 dropped str_replace_editor from the base composition.
 // Mount the official package explicitly so the native-editor scenario still
 // exercises the real tool instead of silently degrading to write/edit.
-const basePatch = join(runtime, 'node_modules/@deepseek-ai/dsh-base/cordis.patch.yml');
-if (existsSync(basePatch) && !readFileSync(basePatch, 'utf8').includes('tool-str-replace-editor')) {
+// Resolve through the CLI's dependency graph: isolated pnpm layouts do not
+// expose every transitive package at the runtime's top-level node_modules.
+const hostRequire = createRequire(runtimeRequire.resolve('@deepseek-ai/dsh/package.json'));
+const basePatch = join(dirname(hostRequire.resolve('@deepseek-ai/dsh-base/package.json')), 'cordis.patch.yml');
+if (!readFileSync(basePatch, 'utf8').includes('tool-str-replace-editor')) {
   patches.push({ insert: [{ id: 'tool-str-replace-editor', name: '@deepseek-ai/dsh-tool-str-replace-editor', config: { maxOutputChars: 16000 } }] });
 }
 if (driverArg) {

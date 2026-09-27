@@ -4,8 +4,8 @@ import { spawn, execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync, copyFileSync, symlinkSync, existsSync, readdirSync, realpathSync } from 'node:fs'
 import { join, resolve, dirname, delimiter } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
 import { inspectHarness, sha256, PLUGIN } from './harness-doctor.mjs'
+import { loadHarnessYaml } from './harness-dependencies.mjs'
 
 const scriptRoot = dirname(fileURLToPath(import.meta.url))
 const runnerSha256 = sha256(fileURLToPath(import.meta.url))
@@ -119,15 +119,15 @@ try {
   mkdirSync(join(profile, 'node_modules/@nanmicoder'), { recursive: true })
   symlinkSync(artifactRoot, join(profile, 'node_modules/@nanmicoder/dsh-auto-mode'), 'dir')
   symlinkSync(join(runtime, 'node_modules/@deepseek-ai'), join(profile, 'node_modules/@deepseek-ai'), 'dir')
-  const yaml = createRequire(join(runtime, 'package.json'))('yaml')
+  const yaml = loadHarnessYaml(runtime)
   json(join(profile, 'package.json'), { name: 'auto-mode-product-test-profile', version: '0.0.0', private: true, type: 'module', dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', PLUGIN], patchReload: 'startup' } } })
   const pluginPatch = yaml.parse(readFileSync(join(artifactRoot, 'cordis.patch.yml'), 'utf8'))
   const permission = pluginPatch.find(patch => patch.id === 'permission')?.config
-  if (!permission?.presets?.auto) throw Error('Artifact does not declare the Auto permission preset')
+  if (!permission?.presets?.['sandbox-auto']) throw Error('Artifact does not declare the Auto permission preset')
   const fixture = join(profile, 'auto-mode-fixture.mjs')
   copyFileSync(join(scriptRoot, 'fixtures/harness-runtime-llm.mjs'), fixture)
   writeFileSync(join(profile, 'cordis.patch.yml'), yaml.stringify([
-    { id: 'permission', config: { ...permission, defaultPreset: 'auto' } },
+    { id: 'permission', config: { ...permission, defaultPreset: 'sandbox-auto' } },
     { id: 'llm-deepseek', disabled: true },
     { id: 'llm-pi-ai', disabled: true },
     { id: 'session-title-llm', disabled: true },
@@ -173,7 +173,7 @@ try {
     deniedEffectsAbsent: ['denied.txt', 'asked.txt', 'error-1.txt', 'error-2.txt', 'error-3.txt', 'child-widening.txt'].every(file => contents(file) === undefined),
     canaryUnchanged: readFileSync(protectedPath, 'utf8') === protectedValue,
     allSessionCwdExistingTmp: trace.filter(event => event.event === 'tool-result').every(event => event.cwd === '/tmp' || event.cwd === '/private/tmp'),
-    parentAutoActive: trace.filter(event => event.event === 'tool-result' && !event.child).every(event => event.preset === 'auto'),
+    parentAutoActive: trace.filter(event => event.event === 'tool-result' && !event.child).every(event => event.preset === 'sandbox-auto'),
     childInheritedGuidance: modelFor('child-ordinary')?.autoGuidance === true,
     recoverySchemaFieldsRemoved: modelFor('recovery')?.bashHasSandboxField === false,
     ordinarySchemaFieldsRestored: modelFor('classifier-allow')?.bashHasSandboxField === true,

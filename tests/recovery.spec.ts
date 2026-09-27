@@ -151,7 +151,7 @@ async function createHarness(options: { failClassifier?: boolean } = {}): Promis
         header: { id: 'session-auto', cwd: workspace },
         requestHeader: () => ({ config: { provider: 'mock-provider', model: 'mock-model' } }),
         events: [
-          { type: 'permission/preset', data: { preset: 'auto' } },
+          { type: 'permission/preset', data: { preset: 'sandbox-auto' } },
           ...userMessages.map((text, index) => ({
             type: 'user/message',
             data: {
@@ -272,8 +272,7 @@ describe('sandbox recovery from PR #11', () => {
       role: 'user',
       content: [{ type: 'text', text: AutoMode.AUTO_MODE_REDUNDANT_SANDBOX_RETRY_CONTEXT }],
       source: {
-        kind: 'plugin',
-        plugin: AutoMode.name,
+        kind: 'plugin:auto-permission-mode',
         form: 'notice',
         summary: 'Auto Mode requires a field-less retry.',
       },

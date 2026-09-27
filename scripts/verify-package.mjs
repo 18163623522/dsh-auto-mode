@@ -1,5 +1,6 @@
 import { access, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { verifyGitArtifact } from './verify-git-artifact.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
@@ -14,8 +15,13 @@ if (manifest.publishConfig?.access !== 'public' || manifest.publishConfig?.regis
 if (!patch.includes("name: '@nanmicoder/dsh-auto-mode'")) {
   throw new Error('cordis.patch.yml must resolve the scoped npm package name')
 }
-if (manifest.scripts?.prepublishOnly !== 'pnpm verify' || manifest.scripts?.prepare !== 'npm run build') {
-  throw new Error('npm release or Git preparation lifecycle scripts are missing')
+if (manifest.scripts?.prepublishOnly !== 'pnpm verify') {
+  throw new Error('npm release verification lifecycle is missing')
+}
+for (const hook of ['prepare', 'prepack', 'prepublish', 'publish', 'preinstall', 'install', 'postinstall']) {
+  if (manifest.scripts?.[hook]) {
+    throw new Error(`Git installation must use checked-in lib without lifecycle builds: remove ${hook}`)
+  }
 }
 for (const peer of Object.keys(manifest.peerDependencies ?? {})) {
   if (manifest.peerDependenciesMeta?.[peer]?.optional !== true) {
@@ -46,4 +52,5 @@ if (!/window\.__ModuleLoader__\.load\(\{\s*id:\s*["']@nanmicoder\/dsh-auto-mode[
 if (/require\(["']@deepseek-ai\//.test(clientBundle)) {
   throw new Error('client bundle contains an unresolved DeepSeek package import')
 }
-console.log('package contract verified')
+await verifyGitArtifact(root)
+console.log('package contract and Git artifact verified')

@@ -116,7 +116,7 @@ async function createHarness(options: { failClassifier?: boolean } = {}): Promis
         header: { id: 'session-auto', cwd: workspace },
         requestHeader: () => ({ config: { provider: 'mock-provider', model: 'mock-model' } }),
         events: [
-          { type: 'permission/preset', data: { preset: 'auto' } },
+          { type: 'permission/preset', data: { preset: 'sandbox-auto' } },
           ...userMessages.map((text, index) => ({
             type: 'user/message',
             data: {

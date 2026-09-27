@@ -8,7 +8,8 @@ const DIALOG_ATTRIBUTE = 'data-dsh-auto-mode-risk-dialog'
 const LOCALIZED_ATTRIBUTE = 'data-dsh-auto-mode-localized'
 const COPY_ATTRIBUTE = 'data-dsh-auto-mode-copy'
 const COPY_ARIA_ATTRIBUTE = 'data-dsh-auto-mode-copy-aria'
-const AUTO_SOURCE_LABEL = 'Auto'
+// Only our custom preset is decorated; the host reserves `auto` for Auto review.
+const AUTO_SOURCE_LABEL = 'Sandbox Auto'
 const AUTO_LABELS = new Set([AUTO_SOURCE_LABEL, en['preset.label'], zh['preset.label']])
 const AUTO_DESCRIPTIONS = new Set([en['preset.description'], zh['preset.description']])
 const PERMISSION_LABEL_SETS = [
@@ -581,7 +582,9 @@ export function installAutoPermissionIcon(
       dismissDialog()
       return
     }
-    if (event.key !== 'Enter' || dialog !== null || !(event.target instanceof Element)) return
+    // Current hosts settle slash choices with either Enter or Tab; Shift+Tab dismisses.
+    const settlesChoice = event.key === 'Enter' || (event.key === 'Tab' && !event.shiftKey)
+    if (!settlesChoice || dialog !== null || !(event.target instanceof Element)) return
     const option = activeAutoPermissionOption(event.target)
     if (option === null) return
     event.preventDefault()
