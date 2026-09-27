@@ -1,3 +1,14 @@
+Sandbox Auto 0.2.0-alpha.1 prepares for the upcoming Harness desktop release against verified Harness 0.1.7-rc.2 and master 21638c56315ae6a2b552d6091945d3144c9af32e. Install from npm with `@nanmicoder/dsh-auto-mode@next` (or the exact version). Stable `latest` remains 0.1.10.
+
+- Rename the plugin-owned permission preset to `sandbox-auto` (Sandbox Auto / 沙箱自动审批), preserving workspace-write + ask while keeping the host's official full-access Auto separate.
+- Migrate legacy workspace-sandboxed Auto sessions by appending identity events; preserve approval settings and delegated lineage. Real disk and restart acceptance verifies migration is idempotent and official Auto remains unchanged.
+- Adopt producer-owned message sources for V4 logs. Keep delegated children supervised even when the host projects their mode as custom; deny actions when the live human root authority is unavailable.
+- Ship checked-in build outputs and remove install-time prepare so Git installs work under the desktop package manager. CI verifies source/output consistency and the packed package.
+- Update exact DSH dependencies, client labels, risk acknowledgement and slash-command Tab handling. Test desktop plugin installation, activation, restart and an actual signed-in account conversation.
+- This is a preview for the verified source revision. The final official Harness 0.2.0 version and cohort will receive a separate compatibility check when released. See docs/desktop-020-preparation.md and validation/0.2.0-alpha.1 for evidence and platform limits.
+
+---
+
 Auto Mode 0.1.10 supports Harness `0.1.5-rc.2`, the recommended RC pairing, while retaining all five previously supported exact hosts.
 
 - Fix startup on `0.1.5-rc.2`: version 0.1.9 rejected it in the plugin compatibility guard. The consumed RC permission, tool, approval, session and Web menu implementations are unchanged, so approval policy remains unchanged.

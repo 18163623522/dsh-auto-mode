@@ -3,6 +3,7 @@ import z from '@deepseek-ai/schemastery'
 import { createUserMessage, type LlmCallConfig, type ToolSchema } from '@deepseek-ai/dsh-llm'
 // Type-only: declares the Alpha.2 permissionPresets service on Cordis Context.
 import type {} from '@deepseek-ai/dsh-permission-presets'
+import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import type { PreToolDecision, ToolExecution, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import { ArtifactRegistry } from './artifacts.js'
 import { createHttpClassifier, sanitizeClassifierArguments, sanitizeClassifierText } from './classifier.js'
@@ -24,8 +25,8 @@ export type * from './types.js'
 
 export const name = 'auto-permission-mode'
 export const inject = ['tools', 'llm', 'permissionPresets']
-/** Official permission preset key that activates this policy. */
-export const AUTO_PERMISSION_PRESET = 'auto'
+/** Plugin-owned permission preset key; distinct from the official full-access Auto. */
+export const AUTO_PERMISSION_PRESET = 'sandbox-auto'
 
 export const AUTO_MODE_REDUNDANT_SANDBOX_MARKER = '[auto-mode redundant sandbox request]'
 export const AUTO_MODE_REDUNDANT_SANDBOX_REASON = `${AUTO_MODE_REDUNDANT_SANDBOX_MARKER} Auto already runs in workspace-write. Retry the same tool call after completely removing sandbox_permissions and justification; this call did not execute.`
@@ -112,6 +113,17 @@ export function isAutoOrDelegatedPermissionExecution(
   currentPreset: CurrentPermissionPreset,
   presetName = AUTO_PERMISSION_PRESET,
 ): boolean {
+  if (isAutoPermissionExecution(exec, currentPreset, presetName)) return true
+  if (exec.agent?.session.header?.origin === 'subagent') {
+    // Custom workspace presets derive to `custom` under the child's mandatory
+    // approval=never. Durable identity still requires this policy to supervise it.
+    for (const event of sessionEventsNewestFirst(exec.agent.session)) {
+      if (event.type === 'permission/preset') {
+        if (event.data.preset === presetName) return true
+        break
+      }
+    }
+  }
   return autoPermissionAuthority(exec, parentAgent, currentPreset, presetName) !== undefined
 }
 
@@ -122,21 +134,34 @@ export function autoPermissionAuthority(
   currentPreset: CurrentPermissionPreset,
   presetName = AUTO_PERMISSION_PRESET,
 ): ToolExecution['agent'] | undefined {
-  if (isAutoPermissionExecution(exec, currentPreset, presetName)) return exec.agent
-  let session = exec.agent?.session
+  let candidate = exec.agent
   const visited = new Set<string>()
-  while (session?.header?.origin === 'subagent' && session.header.parentSession !== undefined) {
-    const parentSessionId = session.header.parentSession
+  while (candidate?.session.header?.origin === 'subagent') {
+    const parentSessionId = candidate.session.header.parentSession
+    if (parentSessionId === undefined) return undefined
     const parentKey = String(parentSessionId)
     if (visited.has(parentKey)) return undefined
     visited.add(parentKey)
-    const parent = parentAgent(parentSessionId)
-    if (parent === undefined) return undefined
-    const parentExec = { ...exec, agent: parent }
-    if (isAutoPermissionExecution(parentExec, currentPreset, presetName)) return parent
-    session = parent.session
+    candidate = parentAgent(parentSessionId)
   }
-  return undefined
+  return candidate !== undefined && currentPreset(candidate.session) === presetName ? candidate : undefined
+}
+
+/** Rename only the former workspace-sandboxed selection, preserving both durable knobs. */
+export function migrateLegacyAutoSession(session: AgentSession, presetName = AUTO_PERMISSION_PRESET): boolean {
+  if (presetName === 'auto') return false
+  let preset: string | undefined
+  let sandbox: string | undefined
+  let approval: string | undefined
+  for (const event of sessionEventsNewestFirst(session)) {
+    if (event.type === 'permission/preset' && preset === undefined) preset = event.data.preset
+    if (event.type === 'sandbox/mode' && sandbox === undefined) sandbox = event.data.mode
+    if (event.type === 'approval/policy' && approval === undefined) approval = event.data.policy
+    if (preset !== undefined && sandbox !== undefined && approval !== undefined) break
+  }
+  if (preset !== 'auto' || sandbox !== 'workspace-write' || (approval !== 'ask' && approval !== 'never')) return false
+  session.append('permission/preset', { preset: presetName })
+  return true
 }
 
 function classifierFrom(ctx: Context, config: Config): SafetyClassifier {
@@ -210,8 +235,7 @@ function redundantSandboxRetryContext() {
   return createUserMessage({
     content: [{ type: 'text', text: AUTO_MODE_REDUNDANT_SANDBOX_RETRY_CONTEXT }],
     source: {
-      kind: 'plugin',
-      plugin: name,
+      kind: 'plugin:auto-permission-mode',
       form: 'notice',
       summary: 'Auto Mode requires a field-less retry.',
     },
@@ -253,6 +277,16 @@ export function apply(ctx: Context, config: Config = {}): void {
   const recoveryPresentations = new WeakMap<object, Set<string>>()
   const classifier = classifierFrom(ctx, config)
   const presetName = config.presetName ?? AUTO_PERMISSION_PRESET
+  // Prepend before the permission owner's restore admission; appended identity
+  // uses the normal Session publication/persistence path, never edits old rows.
+  const target = ctx.permissionPresets.resolve(presetName)
+  if (target.sandbox !== 'workspace-write' || target.approval !== 'ask') {
+    throw new Error('Auto Mode requires a workspace-write + ask permission preset')
+  }
+  ctx.inject(['sessions'], scope => {
+    scope.on('session/created', session => { migrateLegacyAutoSession(session, presetName) }, { prepend: true })
+    for (const session of scope.sessions.list()) migrateLegacyAutoSession(session, presetName)
+  })
   const rootOptions: RootOptions = {
     ...(config.workspaceRoot === undefined ? {} : { workspaceRoot: config.workspaceRoot }),
     ...(config.dshHome === undefined ? {} : { dshHome: config.dshHome }),
@@ -264,7 +298,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   const authorityFor = (exec: Readonly<ToolExecution>): ToolExecution['agent'] | undefined => autoPermissionAuthority(
     exec, parentAgent, currentPreset, presetName,
   )
-  const isAutoExecution = (exec: Readonly<ToolExecution>): boolean => authorityFor(exec) !== undefined
+  const isAutoExecution = (exec: Readonly<ToolExecution>): boolean => isAutoOrDelegatedPermissionExecution(
+    exec, parentAgent, currentPreset, presetName,
+  )
 
   const armRecoveryPresentation = (exec: Readonly<ToolExecution>): void => {
     const agent = exec.agent
@@ -299,15 +335,21 @@ export function apply(ctx: Context, config: Config = {}): void {
     scope.systemPrompt.context({
       name: 'auto-mode:policy',
       order: 111,
-      text: ({ agent }) => agent !== undefined && authorityFor({ agent } as Readonly<ToolExecution>) !== undefined
+      text: ({ agent }) => agent !== undefined && isAutoExecution({ agent } as Readonly<ToolExecution>)
         ? AUTO_MODE_AGENT_GUIDANCE
         : '',
     })
   })
 
-  ctx.tools.guard((exec) => isAutoExecution(exec) ? hardDenyReason(exec, rootsFor(exec)) : undefined)
+  const orphanDenial = (exec: Readonly<ToolExecution>): string | undefined =>
+    exec.agent?.session.header?.origin === 'subagent' && authorityFor(exec) === undefined
+      ? '[auto-mode parent authority unavailable] a delegated session requires its live Sandbox Auto root; no action was executed'
+      : undefined
+  ctx.tools.guard((exec) => isAutoExecution(exec) ? orphanDenial(exec) ?? hardDenyReason(exec, rootsFor(exec)) : undefined)
   ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
     if (!isAutoExecution(exec)) return next()
+    const orphan = orphanDenial(exec)
+    if (orphan !== undefined) return { kind: 'deny', reason: orphan }
     const roots = rootsFor(exec)
     const hard = hardDenyReason(exec, roots)
     if (hard !== undefined) return { kind: 'deny', reason: `[auto-mode hard deny] ${hard}` }
@@ -332,7 +374,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       if (widening.justification.trim() === '') {
         return { kind: 'deny', reason: '[auto-mode invalid sandbox request] sandbox_permissions requires a non-empty justification' }
       }
-      if (authorityFor(exec) !== exec.agent) {
+      if (exec.agent?.session.header.origin === 'subagent' || authorityFor(exec) !== exec.agent) {
         return { kind: 'deny', reason: '[auto-mode delegated escalation denied] a subagent cannot widen the parent workspace sandbox; report the blocked action to the parent' }
       }
     } else if (assessment.decision === 'allow') {

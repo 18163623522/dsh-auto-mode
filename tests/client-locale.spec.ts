@@ -14,18 +14,18 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-describe('Auto permission locale integration', () => {
+describe('Sandbox Auto permission locale integration', () => {
   it('registers with the official locale service and follows a live language switch', async () => {
     document.body.innerHTML = `
       <div role="menu">
         <button role="menuitem">Read Only</button>
         <button role="menuitem">Workspace Write</button>
-        <button role="menuitem">Auto</button>
+        <button role="menuitem">Sandbox Auto</button>
         <button role="menuitem">Full access</button>
       </div>
     `
     const auto = Array.from(document.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'))
-      .find(item => item.textContent === 'Auto')
+      .find(item => item.textContent === 'Sandbox Auto')
     context = new Context()
     const dictionaries = new Map<string, Map<string, Record<string, string>>>()
     const listeners = new Set<() => void>()
@@ -49,14 +49,14 @@ describe('Auto permission locale integration', () => {
     const plugin = context.plugin(AutoModeClient)
     await plugin
 
-    expect(auto?.textContent).toBe('Auto')
+    expect(auto?.textContent).toBe('Sandbox Auto')
     active = 'zh'
     for (const listener of listeners) listener()
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(auto?.textContent).toBe('自动审批')
+    expect(auto?.textContent).toBe('沙箱自动审批')
 
     await plugin.dispose()
-    expect(auto?.textContent).toBe('Auto')
+    expect(auto?.textContent).toBe('Sandbox Auto')
     expect(listeners.size).toBe(0)
     expect(Array.from(dictionaries.values()).every(entries => entries.size === 0)).toBe(true)
   })

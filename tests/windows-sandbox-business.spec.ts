@@ -53,7 +53,7 @@ async function createWindowsHarness(userMessage: string | ((outside: string) => 
   const classifierCalls: ClassifierInput[] = []
   const events: Array<{ type: string; data?: Record<string, unknown> }> = [
     { type: 'turn/start' },
-    { type: 'permission/preset', data: { preset: 'auto' } },
+    { type: 'permission/preset', data: { preset: 'sandbox-auto' } },
     { type: 'sandbox/mode', data: { mode: 'workspace-write' } },
     { type: 'approval/policy', data: { policy: 'ask' } },
     {

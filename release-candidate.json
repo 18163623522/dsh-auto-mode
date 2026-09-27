@@ -1,15 +1,16 @@
 {
-  "version": "0.1.10",
-  "artifactSha256": "7b123e67cb93aea8f74d9e5989e63fd467efa642050b4ada7198709a226b67e3",
-  "node": "24.20.0",
+  "version": "0.2.0-alpha.1",
+  "artifactSha256": "55ee498d7fc5286010e1bad016159a00c1a0930796f22e2a511ecf8b4f91924a",
+  "node": "24.21.0",
   "npm": "11.19.0",
-  "verifiedAt": "2026-09-21T09:56:30.105Z",
+  "verifiedAt": "2026-09-27T17:16:59.878301+00:00",
   "realApiPassed": true,
   "realApiProvider": "deepseek-official",
   "realApiModel": "deepseek-flash",
   "workspace": "/tmp",
-  "realApiRequests": 17,
+  "realApiRequests": 20,
   "supportedHosts": [
+    "0.1.7-rc.2",
     "0.1.5-rc.2",
     "0.1.5-rc.1",
     "0.1.2-rc.1",
@@ -18,11 +19,13 @@
     "0.1.2-alpha.2"
   ],
   "evidence": [
-    "validation/0.1.10/fixture.json",
-    "validation/0.1.10/real-api.json",
-    "validation/0.1.10/web.json"
+    "validation/0.2.0-alpha.1/desktop-pre-release.json",
+    "validation/0.2.0-alpha.1/fixture.json",
+    "validation/0.2.0-alpha.1/legacy-matrix.json",
+    "validation/0.2.0-alpha.1/persistence.json",
+    "validation/0.2.0-alpha.1/real-api.json"
   ],
-  "packReproducedInCi": true,
-  "adversarialReview": "Two independent reviewers found no blockers in the version guard, exact cohorts, package contract, recovery CLI and documentation. Target RC.2 doctor passed with 231 DSH packages. See VALIDATION.md.",
-  "ciRun": "https://github.com/NanmiCoder/dsh-auto-mode/actions/runs/35586199256"
+  "adversarialReview": "Three independent reviewers examined Host, client and distribution. Fixed and re-reviewed delegated custom-mode supervision, synchronous preset validation, and LF-stable build outputs. All reviewed blockers resolved.",
+  "releaseTrack": "next",
+  "upstreamMaster": "21638c56315ae6a2b552d6091945d3144c9af32e"
 }

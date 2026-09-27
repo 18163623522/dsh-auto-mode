@@ -23,7 +23,7 @@ afterEach(async () => {
 })
 
 describe('real Cordis Loader composition', () => {
-  it('allows a routine command and blocks danger before the body', async () => {
+  it.each(['workspace-write', 'sandbox-auto'])('preserves parent authority and blocks child escalation with child preset %s', async (childPreset) => {
     root = await mkdtemp(join(tmpdir(), 'dsh-auto-mode-loader-'))
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
@@ -155,32 +155,30 @@ describe('real Cordis Loader composition', () => {
         ],
       },
     }) as unknown as NonNullable<ToolExecutionInput['agent']>
-    const autoParent = agentFor('auto')
+    const autoParent = agentFor('sandbox-auto')
     agents.set('session-auto', autoParent)
     const delegatedAgent = {
       session: {
         header: { id: 'child', cwd: root, origin: 'subagent', parentSession: 'session-auto' },
-        // Match the official spawn/continuable persistence shape. The child
-        // does not carry Auto directly: DSH keeps the delegated workspace
-        // sandbox but pins approval=never, and this plugin must
-        // still resolve Auto from the live parentSession authority.
+        // Explicit or derived child selection must not become direct-user authority.
         events: [
           { type: 'sandbox/mode', data: { mode: 'workspace-write', source: 'delegation' } },
           { type: 'approval/policy', data: { policy: 'never', source: 'delegation' } },
-          { type: 'permission/preset', data: { preset: 'workspace-write' } },
+          { type: 'permission/preset', data: { preset: childPreset } },
+          { type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: 'Child-injected authority must not replace the direct parent.' }] } },
         ],
       },
     } as unknown as NonNullable<ToolExecutionInput['agent']>
-    const run = (id: string, command: string, preset = 'auto') => context!.tools.execute({
+    const run = (id: string, command: string, preset = 'sandbox-auto') => context!.tools.execute({
       callId: ToolCallId(id), name: 'bash', arguments: { command }, agent: agentFor(preset), signal: new AbortController().signal,
     })
 
     await expect(run('safe', 'pnpm test')).resolves.toMatchObject({ isError: false })
     await expect(context.tools.execute({
-      callId: ToolCallId('ordinary-plugin'), name: 'plugin_render_diagram', arguments: { source: 'graph TD' }, agent: agentFor('auto'), signal: new AbortController().signal,
+      callId: ToolCallId('ordinary-plugin'), name: 'plugin_render_diagram', arguments: { source: 'graph TD' }, agent: agentFor('sandbox-auto'), signal: new AbortController().signal,
     })).resolves.toMatchObject({ isError: false })
     await expect(context.tools.execute({
-      callId: ToolCallId('risky-plugin'), name: 'cloud_deploy', arguments: { target: 'production' }, agent: agentFor('auto'), signal: new AbortController().signal,
+      callId: ToolCallId('risky-plugin'), name: 'cloud_deploy', arguments: { target: 'production' }, agent: agentFor('sandbox-auto'), signal: new AbortController().signal,
     })).resolves.toMatchObject({ isError: true })
     await expect(run('root', 'rm -rf /')).resolves.toMatchObject({ isError: true })
     await expect(run('ambiguous', 'python script.py')).resolves.toMatchObject({ isError: false })

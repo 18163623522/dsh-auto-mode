@@ -97,7 +97,7 @@ async function createHarness() {
           header: { id: 'security-boundary', cwd },
           requestHeader: () => ({ config: { provider: 'fixture', model: 'fixture' } }),
           events: [
-            { type: 'permission/preset', data: { preset: 'auto' } },
+            { type: 'permission/preset', data: { preset: 'sandbox-auto' } },
             { type: 'user/message', data: { role: 'user', source: { kind: 'user' }, content: [{ type: 'text', text: 'Read project status only.' }] } },
           ],
         },

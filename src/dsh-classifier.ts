@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import type { GenerateOptions, Message, StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed, GenerateOptions, Message, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { CLASSIFIER_SYSTEM_PROMPT, parseClassifierDecision } from './classifier.js'
 import type { ClassifierDecision, ClassifierInput, SafetyClassifier } from './types.js'
+
+// Producer-owned attribution also survives Harness V3-to-V4 log migration.
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'plugin:auto-permission-mode': { kind: 'plugin:auto-permission-mode' } & ContextFormed
+  }
+}
 
 interface LlmStreamRuntime {
   stream(options: GenerateOptions): AsyncIterable<StreamChunk>
@@ -32,7 +39,7 @@ function classifierMessage(input: ClassifierInput): Message {
     id: `auto-mode-classifier-${randomUUID()}` as Message['id'],
     role: 'user' as const,
     content: [{ type: 'text' as const, text: classifierPayload(input) }],
-    source: { kind: 'plugin' as const, plugin: '@nanmicoder/dsh-auto-mode' },
+    source: { kind: 'plugin:auto-permission-mode' as const },
   })
 }
 

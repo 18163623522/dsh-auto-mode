@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
-import { isAutoOrDelegatedPermissionExecution, isAutoPermissionExecution } from '../src/index.js'
+import { autoPermissionAuthority, isAutoOrDelegatedPermissionExecution, isAutoPermissionExecution } from '../src/index.js'
 import { currentTestPermissionPreset } from './harness.js'
 
 function execution(...presets: string[]): ToolExecution {
@@ -34,20 +34,20 @@ function child(parentSession: string, ...presets: string[]): ToolExecution {
 
 describe('Auto permission activation', () => {
   it('activates only for the session current preset', () => {
-    expect(isAutoPermissionExecution(execution('auto'), currentTestPermissionPreset)).toBe(true)
-    expect(isAutoPermissionExecution(execution('auto', 'danger-full-access'), currentTestPermissionPreset)).toBe(false)
-    expect(isAutoPermissionExecution(execution('danger-full-access', 'auto'), currentTestPermissionPreset)).toBe(true)
+    expect(isAutoPermissionExecution(execution('sandbox-auto'), currentTestPermissionPreset)).toBe(true)
+    expect(isAutoPermissionExecution(execution('sandbox-auto', 'danger-full-access'), currentTestPermissionPreset)).toBe(false)
+    expect(isAutoPermissionExecution(execution('danger-full-access', 'sandbox-auto'), currentTestPermissionPreset)).toBe(true)
     expect(isAutoPermissionExecution(execution('workspace-write'), currentTestPermissionPreset)).toBe(false)
     expect(isAutoPermissionExecution({ name: 'bash', token: Symbol('mode') } as ToolExecution, currentTestPermissionPreset)).toBe(false)
   })
 
   it('supports a deployment-specific preset key', () => {
     expect(isAutoPermissionExecution(execution('guarded'), currentTestPermissionPreset, 'guarded')).toBe(true)
-    expect(isAutoPermissionExecution(execution('auto'), currentTestPermissionPreset, 'guarded')).toBe(false)
+    expect(isAutoPermissionExecution(execution('sandbox-auto'), currentTestPermissionPreset, 'guarded')).toBe(false)
   })
 
   it('inherits Auto through official subagent lineage only', () => {
-    const autoParent = execution('auto').agent
+    const autoParent = execution('sandbox-auto').agent
     const fullParent = execution('danger-full-access').agent
     const lookup = (id: string) => id === 'auto-parent' ? autoParent : id === 'full-parent' ? fullParent : undefined
     // This is the real persisted shape of an AgentTeams/Workflow spawn child:
@@ -60,7 +60,7 @@ describe('Auto permission activation', () => {
   })
 
   it('inherits Auto across nested live subagents and rejects lineage cycles', () => {
-    const autoParent = execution('auto').agent
+    const autoParent = execution('sandbox-auto').agent
     const middle = child('auto-parent', 'workspace-write').agent
     const nested = child('middle', 'workspace-write')
     const lookup = (id: string) => id === 'auto-parent' ? autoParent : id === 'middle' ? middle : undefined
@@ -70,4 +70,21 @@ describe('Auto permission activation', () => {
     const second = child('first').agent
     expect(isAutoOrDelegatedPermissionExecution(child('first'), id => id === 'first' ? first : second, currentTestPermissionPreset)).toBe(false)
   })
+  it('does not activate for the official Auto preset', () => {
+    expect(isAutoPermissionExecution(execution('auto'), currentTestPermissionPreset)).toBe(false)
+  })
+
+  it('resolves inherited preset identity to the human parent, never the child', () => {
+    const parent = execution('sandbox-auto').agent
+    const middle = child('parent', 'sandbox-auto').agent
+    const nested = child('middle', 'sandbox-auto')
+    const lookup = (id: string) => id === 'parent' ? parent : id === 'middle' ? middle : undefined
+    expect(autoPermissionAuthority(nested, lookup, currentTestPermissionPreset)).toBe(parent)
+    expect(autoPermissionAuthority(child('missing', 'sandbox-auto'), lookup, currentTestPermissionPreset)).toBeUndefined()
+    // Keep policy active when a child's explicit selection outlives its live parent.
+    expect(isAutoOrDelegatedPermissionExecution(child('missing', 'sandbox-auto'), lookup, currentTestPermissionPreset)).toBe(true)
+    const cyclic = child('cycle', 'sandbox-auto')
+    expect(autoPermissionAuthority(cyclic, () => cyclic.agent, currentTestPermissionPreset)).toBeUndefined()
+  })
+
 })

@@ -12,5 +12,5 @@ export const currentTestPermissionPreset: CurrentPermissionPreset = (session) =>
 
 /** Satisfy Auto's real Alpha.2 service dependency in focused policy compositions. */
 export function provideTestPermissionPresets(ctx: Context): void {
-  ctx.provide('permissionPresets', { current: currentTestPermissionPreset } as never)
+  ctx.provide('permissionPresets', { current: currentTestPermissionPreset, resolve: () => ({ sandbox: 'workspace-write', approval: 'ask' }) } as never)
 }
