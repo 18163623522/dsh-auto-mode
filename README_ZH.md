@@ -9,47 +9,42 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@nanmicoder/dsh-auto-mode"><img src="https://img.shields.io/npm/v/@nanmicoder/dsh-auto-mode.svg" alt="npm 版本"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@nanmicoder/dsh-auto-mode.svg" alt="MIT 许可证"></a>
-  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.1.7--rc.2%20candidate-202724" alt="精确宿主兼容矩阵见安装说明">
+  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.0--rc.2-202724" alt="精确宿主兼容矩阵见安装说明">
 </p>
 
-## Sandbox Auto 桌面端预适配
+## Sandbox Auto 沙箱自动审批
 
 `dsh-auto-mode` 让日常操作继续留在 Harness 的 `workspace-write` 沙箱内，审查语义风险及精确的一次性越界请求。插件模式显示为 **沙箱自动审批 / Sandbox Auto**，使用独立 key `sandbox-auto`，不接管官方无沙箱的 **Auto review**。
 
 > [!IMPORTANT]
-> 当前工作区已实现 `0.2.0-alpha.1` 候选版，适配目标为 Harness `0.1.7-rc.2`、master `21638c56315ae6a2b552d6091945d3144c9af32e`。本预览版使用 npm `next` 标签，稳定版 npm `latest` 保持 `0.1.10`。这是面向预计发布的桌面端 0.2.0 的预适配，不能视为对尚未发布的正式安装包完成验收。
+> 插件 **0.2.0** 发布到 npm 稳定标签 `latest`，推荐配合官方 Harness **0.2.0-rc.2**（标签 `dsh-v0.2.0-rc.2`，提交 `639ed015397290b3745d163aafe02ffee4aa3f84`）。插件和宿主的版本号相互独立；官方宿主仍标记为 RC，不应假定其 npm `latest` 已指向该版本。
 
-| Harness 宿主 | 插件 / 状态 |
+| Harness 宿主 | 插件支持情况 |
 | --- | --- |
-| `0.1.7-rc.2`，master `21638c56315a` | `0.2.0-alpha.1` 候选版，macOS 桌面 Host、真实 API 和落盘恢复验收通过 |
-| `0.1.5-rc.2` | 已发布 `0.1.10` 的基线；候选版产品入口运行时复验通过 |
-| `0.1.5-rc.1`、`0.1.2-rc.1`、`0.1.2-alpha.5`、`0.1.2-alpha.3`、`0.1.2-alpha.2` | 保留历史声明，本轮尚未全部复验 |
-| `0.1.6-alpha.*` 及其他未列出版本 | 不支持 |
-| 未来官方 `0.2.0` | 需对最终提交、依赖组合及产品入口补做验收 |
+| `0.2.0-rc.2` | 插件 `0.2.0` 的推荐宿主 |
+| `0.1.7-rc.2`、`0.1.5-rc.2`、`0.1.5-rc.1`、`0.1.2-rc.1`、`0.1.2-alpha.5`、`0.1.2-alpha.3`、`0.1.2-alpha.2` | 保留精确兼容声明，发布前运行产品入口矩阵 |
+| 其他未列出的版本，包括 `0.2.0-rc.1`、`0.1.6-alpha.*` | 未声明支持 |
 
-精确声明见 [compatibility.json](./compatibility.json)，声明本身不等于运行时验证。当前范围和待验收项见[桌面端预适配记录](./docs/desktop-020-preparation.md)；[VALIDATION.md](./VALIDATION.md) 保留历史验收证据。
+精确版本见 [compatibility.json](./compatibility.json)，证据见[发布验收](./validation/0.2.0)和[适配记录](./docs/harness-020-rc2.md)。此前的[预适配记录](./docs/desktop-020-preparation.md)保留历史范围。
 
-### 安装本地候选版
+### 安装
 
-在当前源码目录构建并打包：
+在 Harness 的 **插件 → 添加插件** 中输入以下任意一项：
 
-```sh
-pnpm install --frozen-lockfile
-pnpm build
-pnpm pack --pack-destination /tmp
+```text
+@nanmicoder/dsh-auto-mode
+https://github.com/NanmiCoder/dsh-auto-mode
 ```
 
-在 Harness 中打开“插件 → 添加插件”，输入生成的 `nanmicoder-dsh-auto-mode-0.2.0-alpha.1.tgz` 的绝对路径。桌面版请使用应用自己的插件管理器；CLI 不接受 `--profile desktop`。
+固定版本可使用 `@nanmicoder/dsh-auto-mode@0.2.0` 或 `github:NanmiCoder/dsh-auto-mode#v0.2.0`。npm 网页地址不是安装 spec。桌面用户使用应用内插件管理器，确保安装到正确的 profile。
 
 Web profile 可使用：
 
 ```sh
-dsh plugin --profile web add /tmp/nanmicoder-dsh-auto-mode-0.2.0-alpha.1.tgz
+dsh plugin --profile web add @nanmicoder/dsh-auto-mode@0.2.0
 ```
 
-安装预览版时输入 `@nanmicoder/dsh-auto-mode@next`，也可固定为 `@nanmicoder/dsh-auto-mode@0.2.0-alpha.1`。历史受支持宿主的已发布稳定版可固定为 `@nanmicoder/dsh-auto-mode@0.1.10`。npm 网页地址不是安装 spec。
-
-本候选版的 Git 安装直接使用受版本控制的 `lib` 产物，不再执行 `prepare`。GitHub URL 获取的是远端提交，本地改动推送前不会包含这些修复。修改源码后执行 `pnpm build`，分发时一并包含对应编译产物。
+测试本地修改时，执行 `pnpm install --frozen-lockfile`、`pnpm build`、`pnpm pack --pack-destination /tmp`，再添加生成 tarball 的绝对路径。Git 安装直接使用受版本控制的 `lib`，不运行 `prepare`；修改源代码后必须一并更新构建产物。
 
 ### 模式选择与旧会话迁移
 

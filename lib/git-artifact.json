@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inputs": {
-    "package.json": "2794f00e7d269494327c66eb0dd9c222c149e7f6f0ecd3faf043bd2f9f4d1dec",
-    "pnpm-lock.yaml": "e850baa61d15b3c7f1360466ab44bc7e537b786f2d734c6d48b0276325016081",
+    "package.json": "9f9f0a4a64f0050a7be170cad64b5b76df343280abffdbccf2967f540ab18aa0",
+    "pnpm-lock.yaml": "7c246705b458071e7988d2b5350079972eb871ebf0e125dc5206cf5729994949",
     "scripts/clean.mjs": "90d1e2cd893f67c53f77f8b3eb2c0327e2969c4321571cb222e12e500e543f08",
     "scripts/verify-git-artifact.mjs": "730ebc5eb35aff563ddbd71286eee4fff3ede16195d244c0b5e0a42212c20ab5",
     "src/artifacts.ts": "7aaa62c2614a3be779a6d8237299fbc9caac11a39e7c240ff1879eb99962af5d",
