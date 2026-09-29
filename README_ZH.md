@@ -1,3 +1,10 @@
+> [!WARNING]
+> **本项目于 2026-09-29 停止维护，仓库进入归档。** DeepSeek Harness 已内置 Auto review，本插件不再提供修复或后续宿主版本适配。历史发布版本与下载继续保留。
+>
+> **迁移方式：** 在正常工作的会话中，先切换到官方手动权限模式（例如 Workspace write），再通过应用内插件管理器禁用或卸载 `@nanmicoder/dsh-auto-mode`。如果热加载失败，完全退出并重新打开 Harness。新建会话后，选择你需要的内置模式。保留历史会话，不要改写权限身份或删除日志。
+>
+> **两者权限策略不等价：** 本插件默认使用 `workspace-write` 沙箱；已审查的 Harness 0.2.0-rc.2 内置 Auto review 使用 `danger-full-access`。启用前请阅读当前官方权限说明。参见[官方 Harness 源码](https://github.com/deepseek-ai/deepseek-harness)。下方安装和兼容信息仅作历史记录，不代表持续支持承诺。
+
 <p align="right">
   <a href="./README.md">English</a> · <strong>简体中文</strong>
 </p>
