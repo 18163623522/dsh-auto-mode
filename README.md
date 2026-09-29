@@ -1,3 +1,10 @@
+> [!WARNING]
+> **Maintenance ended on 2026-09-29.** This repository is being archived. DeepSeek Harness now includes built-in Auto review; this plugin will receive no further fixes or host compatibility updates. Existing releases remain available for historical use.
+>
+> **Migration:** in a working session, select a built-in manual permission mode (for example, Workspace write) before disabling or uninstalling `@nanmicoder/dsh-auto-mode` in the application's plugin manager. If live reload fails, fully quit and reopen Harness. Start a new session and select the built-in mode you intend to use. Preserve old sessions; do not rewrite their permission identities or delete their logs.
+>
+> **The policies are not equivalent:** this plugin defaults to `workspace-write` sandboxing. In the audited Harness 0.2.0-rc.2 implementation, built-in Auto review uses `danger-full-access`. Review the current official permission description before enabling it. See the [official Harness source](https://github.com/deepseek-ai/deepseek-harness). The installation and compatibility details below are historical, not ongoing support promises.
+
 <p align="right">
   <strong>English</strong> · <a href="./README_ZH.md">简体中文</a>
 </p>
