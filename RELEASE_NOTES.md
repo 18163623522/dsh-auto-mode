@@ -1,3 +1,12 @@
+Sandbox Auto 0.2.0 is now the stable npm `latest` release, targeting official Harness 0.2.0-rc.2 (tag dsh-v0.2.0-rc.2, commit 639ed015397290b3745d163aafe02ffee4aa3f84).
+
+- Admit the exact newly released host in package peers and the runtime guard, and pin the full official development dependency cohort.
+- Retain the independent Sandbox Auto preset, workspace sandbox, exact one-shot approvals, delegated child protections, and append-only old-session migration from the preview.
+- Keep prebuilt Git distribution compatible with the desktop installer. Install using `@nanmicoder/dsh-auto-mode`, `@nanmicoder/dsh-auto-mode@0.2.0`, or the GitHub repository URL.
+- Preserve seven previously supported exact hosts and verify the release artifact through the product-entry matrix, real provider calls and persistence acceptance. See validation/0.2.0 and docs/harness-020-rc2.md for exact evidence and scope.
+
+---
+
 Sandbox Auto 0.2.0-alpha.1 prepares for the upcoming Harness desktop release against verified Harness 0.1.7-rc.2 and master 21638c56315ae6a2b552d6091945d3144c9af32e. Install from npm with `@nanmicoder/dsh-auto-mode@next` (or the exact version). Stable `latest` remains 0.1.10.
 
 - Rename the plugin-owned permission preset to `sandbox-auto` (Sandbox Auto / 沙箱自动审批), preserving workspace-write + ask while keeping the host's official full-access Auto separate.

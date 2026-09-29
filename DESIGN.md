@@ -4,7 +4,7 @@
 
 `dsh-auto-mode` adds an `Sandbox Auto` permission preset, a Host policy on the official `ctx.tools` pipeline, and a small Web UI decorator. It does not provide its own executor or sandbox. Calls outside a Session whose durable preset is `sandbox-auto` retain the official Read Only, Workspace Write, or Full access behavior.
 
-Candidate `0.2.0-alpha.1` targets Harness `0.1.7-rc.2` at master `21638c56315ae6a2b552d6091945d3144c9af32e`. The historical host declarations in [compatibility.json](./compatibility.json) remain, but are not all revalidated in this round. The anticipated official desktop 0.2.0 release requires final-product acceptance; current evidence and pending work are recorded in [desktop preparation](./docs/desktop-020-preparation.md). The relevant upstream seams are:
+Stable plugin `0.2.0` targets official Harness `0.2.0-rc.2` at commit `639ed015397290b3745d163aafe02ffee4aa3f84`, while retaining the exact historical hosts in [compatibility.json](./compatibility.json). Release evidence is recorded under `validation/0.2.0`; the source comparison is summarized in [the adaptation record](./docs/harness-020-rc2.md). The relevant upstream seams are:
 
 - `@deepseek-ai/dsh-permission-presets` for durable preset selection;
 - `@deepseek-ai/dsh-sandbox-policy` and the sandboxed shell/filesystem providers for per-call file authority;

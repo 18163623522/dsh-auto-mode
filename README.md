@@ -9,47 +9,42 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@nanmicoder/dsh-auto-mode"><img src="https://img.shields.io/npm/v/@nanmicoder/dsh-auto-mode.svg" alt="npm version"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@nanmicoder/dsh-auto-mode.svg" alt="MIT license"></a>
-  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.1.7--rc.2%20candidate-202724" alt="See installation instructions for exact host compatibility">
+  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.0--rc.2-202724" alt="See installation instructions for exact host compatibility">
 </p>
 
-## Sandbox Auto desktop preparation
+## Sandbox Auto
 
 `dsh-auto-mode` keeps routine work inside Harness's `workspace-write` sandbox and reviews semantic risks or exact one-shot requests for wider access. The plugin's **Sandbox Auto** mode uses the independent key `sandbox-auto`; it does not replace the official, unsandboxed **Auto review** mode.
 
 > [!IMPORTANT]
-> This checkout contains candidate `0.2.0-alpha.1`, adapted for Harness `0.1.7-rc.2` at master `21638c56315ae6a2b552d6091945d3144c9af32e`. This preview is distributed under npm `next`; stable npm `latest` remains `0.1.10`. This is preparation for the anticipated desktop 0.2.0 release, not a compatibility claim for an unreleased final installer.
+> Plugin **0.2.0** is the stable npm `latest` release for the official Harness **0.2.0-rc.2** release (`dsh-v0.2.0-rc.2`, commit `639ed015397290b3745d163aafe02ffee4aa3f84`). Plugin and host version numbers are independent. Harness itself still labels this release RC; install the exact supported host rather than assuming its npm `latest` points to it.
 
-| Harness host | Plugin / status |
+| Harness host | Plugin support |
 | --- | --- |
-| `0.1.7-rc.2`, master `21638c56315a` | `0.2.0-alpha.1` candidate; macOS desktop Host, real API and persistence acceptance passed |
-| `0.1.5-rc.2` | Published `0.1.10` baseline; candidate product-entry runtime recheck passed |
-| `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.2-alpha.5`, `0.1.2-alpha.3`, `0.1.2-alpha.2` | Historical declarations retained; not all revalidated in this round |
-| `0.1.6-alpha.*`, other unlisted hosts | Unsupported |
-| Future official `0.2.0` | Final commit, cohort and product require a separate acceptance run |
+| `0.2.0-rc.2` | Recommended for plugin `0.2.0` |
+| `0.1.7-rc.2`, `0.1.5-rc.2`, `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.2-alpha.5`, `0.1.2-alpha.3`, `0.1.2-alpha.2` | Retained exact compatibility; product-entry matrix required for release |
+| Other unlisted hosts, including `0.2.0-rc.1` and `0.1.6-alpha.*` | Not declared supported |
 
-The exact declaration lives in [compatibility.json](./compatibility.json); declarations alone are not runtime evidence. See [desktop preparation](./docs/desktop-020-preparation.md) for current scope and pending checks. [VALIDATION.md](./VALIDATION.md) records historical acceptance.
+See [compatibility.json](./compatibility.json), [release acceptance](./validation/0.2.0), and [the release adaptation record](./docs/harness-020-rc2.md). Historical preview evidence remains in [desktop preparation](./docs/desktop-020-preparation.md).
 
-### Install the local candidate
+### Install
 
-Build and pack this checkout:
+In Harness, open **Plugins → Add plugin** and enter either:
 
-```sh
-pnpm install --frozen-lockfile
-pnpm build
-pnpm pack --pack-destination /tmp
+```text
+@nanmicoder/dsh-auto-mode
+https://github.com/NanmiCoder/dsh-auto-mode
 ```
 
-In Harness, open **Plugins → Add plugin** and enter the absolute path to the generated `nanmicoder-dsh-auto-mode-0.2.0-alpha.1.tgz`. Use the application's own plugin manager for the Desktop profile; the CLI does not accept `--profile desktop`.
+For an immutable release, use `@nanmicoder/dsh-auto-mode@0.2.0` or `github:NanmiCoder/dsh-auto-mode#v0.2.0`. An npm package page URL is not an install spec. Desktop users should use the application's plugin manager so the plugin is installed into the correct profile.
 
-For a Web profile, the equivalent installation is:
+For a Web profile:
 
 ```sh
-dsh plugin --profile web add /tmp/nanmicoder-dsh-auto-mode-0.2.0-alpha.1.tgz
+dsh plugin --profile web add @nanmicoder/dsh-auto-mode@0.2.0
 ```
 
-Install the preview with `@nanmicoder/dsh-auto-mode@next`, or pin `@nanmicoder/dsh-auto-mode@0.2.0-alpha.1`. For the published stable plugin on its historical supported hosts, pin `@nanmicoder/dsh-auto-mode@0.1.10`. An npm package page URL is not an install spec.
-
-Git installs of this candidate consume tracked `lib` output and have no `prepare` hook. A GitHub URL still resolves the remote commit, so it will not contain these local changes until they are pushed. After source edits, run `pnpm build` and include the matching compiled output before distribution.
+To test local changes, run `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm pack --pack-destination /tmp`, then add the generated tarball by absolute path. Git installations consume tracked `lib` output without an install-time `prepare` hook; include the rebuilt output whenever source changes.
 
 ### Mode selection and migration
 
